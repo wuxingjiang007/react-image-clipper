@@ -1,4 +1,8 @@
 import React, {Component} from 'react';
+import PropTypes from 'prop-types';
+
+import LoadIcon from './LoadIcon';
+
 import styles from './ImageClipper.less';
 
 export default class ImageClipper extends Component {
@@ -12,11 +16,11 @@ export default class ImageClipper extends Component {
     moveY: 0,
     maxX: 0,
     maxY: 0,
-    initClipWidth: 640,
-    initClipHeight: 360,
-    clipWidth: 640,
-    clipHeight: 360,
-    w_h: 16 / 9,
+    initClipWidth: this.props.initClipWidth,
+    initClipHeight: this.props.initClipHeight,
+    clipWidth: this.props.initClipWidth,
+    clipHeight: this.props.initClipHeight,
+    w_h: this.props.initClipWidth / this.props.initClipHeight,
     containerWidth: 0,
     containerHeight: 0,
     imgWidth: 0,
@@ -29,36 +33,48 @@ export default class ImageClipper extends Component {
     clipData: '',
   }
 
-  componentWillReceiveProps (prev, nextProps) {
-    if (this.state.src !== nextProps.src) {
-      this.setState({
-        src: this.props.src,
-      })
-    }
-  }
+  // componentWillReceiveProps (nextProps) {
+  //   if (this.props.src !== nextProps.src) {
+  //     this.setState({
+  //       src: this.props.src,
+  //     })
+  //   }
+  // }
 
   componentDidMount () {
     window.addEventListener('resize', this.setClipViewBoxImg);
     window.addEventListener('mousemove',this.move.onMouseMove);
     window.addEventListener('mouseup',   this.move.onMouseUp);
+
+    // 加载图片
+    const img = new Image()
+
+    img.src = this.state.src;
+
+    img.onload=(loader) => {
+      // 加载的图片
+      const target = loader.target ||loader.path[0];
+      this.setState({
+        target,
+      }, () => {
+        this.setClipViewBoxImg();
+      });
+    }
+
+    img.onerror = () => {
+      this.props.onError()
+    }
   }
 
   componentWillUnmount () {
     this.removeEvent()
   }
 
-  setClipViewBoxImg  = (loader) => {
+  setClipViewBoxImg  = () => {
     const {imgContainer, clipBox, clipperContainer} = this;
     let {target, clipWidth, clipHeight, zoomX, zoomY, moveX, moveY} = this.state;
-
-    // 加载的图片
-    if (!target) {
-      target = loader.target ||loader.path[0];
-      this.setState({
-        target,
-      });
-    }
-
+    console.log('xxxx' + clipBox)
+    console.log(this)
     // 图片本身宽高
     const naturalWidth = target.naturalWidth;
     const naturalHeight = target.naturalHeight;
@@ -388,136 +404,142 @@ export default class ImageClipper extends Component {
   }
 
   render () {
-    const {moveX, moveY, clipWidth, clipHeight, src, imgWidth, imgHeight} = this.state;
-    const {visible} = this.props;
+    const {moveX, moveY, clipWidth, clipHeight, src, imgWidth, imgHeight, target} = this.state;
 
-    if(!visible) {
-      return null;
-    }
+    // console.log(target)
+
+    // if(!target) {
+    //   return <LoadIcon/>
+    // }
     return (
       <div
         ref={(node) => this.clipperContainer = node}
         className={styles.ImageClipperContainer}>
-        <div ref={(node) => this.imgContainer = node}  className={styles.imgContainer}>
-          <img onLoad={(loader) => {
-              this.setClipViewBoxImg(loader);
-            }}
-            style={{
-              width: imgWidth + 'px',
-              height: imgHeight + 'px',
-            }}
-            alt="clippic" src={src}/>
-        </div>
-        <div className={styles.mark}></div>
-        <div className ={styles.clipBoxContainer}>
-          <div
-            ref={(node) => this.clipBox = node}
-            style={{
-              transform: `translate(${moveX}px, ${moveY}px)`,
-              width: `${clipWidth}px`,
-              height: `${clipHeight}px`,
-            }}
-            className={styles.clipBox}>
-            <div   className={styles.clipViewBox}>
-              <img
-                style={{
-                  transform: `translate(${ - moveX}px, ${ - moveY}px)`,
-                  width: imgWidth + 'px',
-                  height: imgHeight + 'px',
+
+        {target?
+        <div>
+          <div ref={(node) => this.imgContainer = node}  className={styles.imgContainer}>
+            <img
+              style={{
+                width: imgWidth + 'px',
+                height: imgHeight + 'px',
+              }}
+              alt="clippic" src={src}/>
+          </div>
+          <div className={styles.mark}>
+          </div>
+          <div className ={styles.clipBoxContainer}>
+            <div
+              ref={(node) => this.clipBox = node}
+              style={{
+                transform: `translate(${moveX}px, ${moveY}px)`,
+                width: `${clipWidth}px`,
+                height: `${clipHeight}px`,
+              }}
+              className={styles.clipBox}>
+              <div   className={styles.clipViewBox}>
+                <img
+                  style={{
+                    transform: `translate(${ - moveX}px, ${ - moveY}px)`,
+                    width: imgWidth + 'px',
+                    height: imgHeight + 'px',
+                  }}
+                  alt="clippic" src={src}/>
+              </div>
+              <div className={styles.clipDashedH}></div>
+              <div className={styles.clipDashedV}></div>
+              <div
+                onMouseDown={(e) => {
+                  e.persist();
+                  this.move.onMouseDown(e, 'ACTION_ALl');
                 }}
-                alt="clippic" src={src}/>
+                className={styles.clipMove}></div>
+              <div
+                onMouseDown={(e) => {
+                  e.persist();
+                  this.move.onMouseDown(e, 'ACTION_EAST');
+                }}
+                className={styles.clipLineE}></div>
+              <div
+                onMouseDown={(e) => {
+                  e.persist();
+                  this.move.onMouseDown(e, 'ACTION_NORTH');
+                }}
+                className={styles.clipLineN}></div>
+              <div
+                onMouseDown={(e) => {
+                  e.persist();
+                  this.move.onMouseDown(e, 'ACTION_WEST');
+                }}
+                className={styles.clipLineW}></div>
+              <div
+                onMouseDown={(e) => {
+                  e.persist();
+                  this.move.onMouseDown(e, 'ACTION_SOUTH');
+                }}
+                className={styles.clipLineS}></div>
+              <div
+                onMouseDown={(e) => {
+                  e.persist();
+                  this.move.onMouseDown(e, 'ACTION_EAST');
+                }}
+                className={styles.clipPointE}></div>
+              <div
+                onMouseDown={(e) => {
+                  e.persist();
+                  this.move.onMouseDown(e, 'ACTION_NORTH');
+                }}
+                className={styles.clipPointN}></div>
+              <div
+                onMouseDown={(e) => {
+                  e.persist();
+                  this.move.onMouseDown(e, 'ACTION_WEST');
+                }}
+              className={styles.clipPointW}></div>
+              <div
+                onMouseDown={(e) => {
+                  e.persist();
+                  this.move.onMouseDown(e, 'ACTION_SOUTH');
+                }}
+                className={styles.clipPointS}></div>
+              <div
+                onMouseDown={(e) => {
+                  e.persist();
+                  this.move.onMouseDown(e, 'ACTION_NORTH_EAST');
+                }}
+                className={styles.clipPointNE}></div>
+              <div
+                onMouseDown={(e) => {
+                  e.persist();
+                  this.move.onMouseDown(e, 'ACTION_NORTH_WEST');
+                }}
+                className={styles.clipPointNW}></div>
+              <div
+                onMouseDown={(e) => {
+                  e.persist();
+                  this.move.onMouseDown(e, 'ACTION_SOUTH_WEST');
+                }}
+                className={styles.clipPointSW}></div>
+              <div
+                onMouseDown={(e) => {
+                  e.persist();
+                  this.move.onMouseDown(e, 'ACTION_SOUTH_EAST');
+                }}
+                className={styles.clipPointSE}></div>
+              </div>
+          </div>
+          <div className={styles.btnGroup}>
+            <div onClick={this.onReset} className={styles.clipBtn}>
+              重置
             </div>
-            <div className={styles.clipDashedH}></div>
-            <div className={styles.clipDashedV}></div>
-            <div
-              onMouseDown={(e) => {
-                e.persist();
-                this.move.onMouseDown(e, 'ACTION_ALl');
-              }}
-              className={styles.clipMove}></div>
-            <div
-              onMouseDown={(e) => {
-                e.persist();
-                this.move.onMouseDown(e, 'ACTION_EAST');
-              }}
-              className={styles.clipLineE}></div>
-            <div
-              onMouseDown={(e) => {
-                e.persist();
-                this.move.onMouseDown(e, 'ACTION_NORTH');
-              }}
-              className={styles.clipLineN}></div>
-            <div
-              onMouseDown={(e) => {
-                e.persist();
-                this.move.onMouseDown(e, 'ACTION_WEST');
-              }}
-              className={styles.clipLineW}></div>
-            <div
-              onMouseDown={(e) => {
-                e.persist();
-                this.move.onMouseDown(e, 'ACTION_SOUTH');
-              }}
-              className={styles.clipLineS}></div>
-            <div
-              onMouseDown={(e) => {
-                e.persist();
-                this.move.onMouseDown(e, 'ACTION_EAST');
-              }}
-              className={styles.clipPointE}></div>
-            <div
-              onMouseDown={(e) => {
-                e.persist();
-                this.move.onMouseDown(e, 'ACTION_NORTH');
-              }}
-              className={styles.clipPointN}></div>
-            <div
-              onMouseDown={(e) => {
-                e.persist();
-                this.move.onMouseDown(e, 'ACTION_WEST');
-              }}
-            className={styles.clipPointW}></div>
-            <div
-              onMouseDown={(e) => {
-                e.persist();
-                this.move.onMouseDown(e, 'ACTION_SOUTH');
-              }}
-              className={styles.clipPointS}></div>
-            <div
-              onMouseDown={(e) => {
-                e.persist();
-                this.move.onMouseDown(e, 'ACTION_NORTH_EAST');
-              }}
-              className={styles.clipPointNE}></div>
-            <div
-              onMouseDown={(e) => {
-                e.persist();
-                this.move.onMouseDown(e, 'ACTION_NORTH_WEST');
-              }}
-              className={styles.clipPointNW}></div>
-            <div
-              onMouseDown={(e) => {
-                e.persist();
-                this.move.onMouseDown(e, 'ACTION_SOUTH_WEST');
-              }}
-              className={styles.clipPointSW}></div>
-            <div
-              onMouseDown={(e) => {
-                e.persist();
-                this.move.onMouseDown(e, 'ACTION_SOUTH_EAST');
-              }}
-              className={styles.clipPointSE}></div>
+            <div onClick={this.onOk} className={styles.clipBtn}>
+              确认
             </div>
+          </div>
         </div>
+        :<LoadIcon/>}
         <div onClick={this.onClose} className={styles.closeBtn}></div>
-        <div className={styles.btnGroup}>
-          <div onClick={this.onReset} className={styles.clipBtn}>
-            重置
-          </div>
-          <div onClick={this.onOk} className={styles.clipBtn}>
-            确认
-          </div>
-        </div>
+
       </div>
     );
   }
@@ -525,13 +547,24 @@ export default class ImageClipper extends Component {
 
 ImageClipper.defaultProps = {
   src: 'http://zyp-farm-2.oss-ap-southeast-1.aliyuncs.com/data/farm/head/1533032455399.jpg',
-  visible: true,
+  initClipWidth: 640,
+  initClipHeight: 360,
   onCancel: () => {
     console.log('onCancel');
   },
   onOk: () => {
     console.log('onOk');
   },
+  onError: () => {// 图片加载失败
+    console.log('图片加载失败');
+  }
 };
 
-console.log(ImageClipper);
+ImageClipper.propTypes = {
+  src: PropTypes.string.isRequired,
+  initClipWidth: PropTypes.number,
+  initClipHeight: PropTypes.number,
+  onCancel: PropTypes.func.isRequired,
+  onOk: PropTypes.func.isRequired,
+  onError: PropTypes.func,
+}

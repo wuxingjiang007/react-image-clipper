@@ -9,16 +9,13 @@ console.log(AutoSuggest)
 
 class App extends Component {
   state = {
-    visible: true
+    visible: false
   }
-
-
-
   render() {
 
     const imgProps = {
       visible: this.state.visible,
-      src: 'http://zyp-farm-2.oss-ap-southeast-1.aliyuncs.com/data/farm/head/1533032455399.jpg',
+      src: 'https://zyp-farm-2.oss-ap-southeast-1.aliyuncs.com/data/user/head/1536290604812.jpg',
       onOk: (value) => {
         console.log(value)
         this.setState({
@@ -30,6 +27,9 @@ class App extends Component {
         this.setState({
           visible: false
         })
+      },
+      onError: () => {
+        alert('tu')
       }
     }
 
@@ -42,6 +42,11 @@ class App extends Component {
         <p className="App-intro">
           To get started, edit <code>src/App.js</code> and save to reload.
         </p>
+        <button onClick={() => {
+          this.setState({
+            visible: true
+          })
+        }}>onClick</button>
         <ImageClipper {...imgProps}/>
       </div>
     );

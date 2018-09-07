@@ -1,6 +1,6 @@
 {
   "name": "react-image-clipper",
-  "version": "0.2.5",
+  "version": "0.3.0",
   "description": "img clip",
   "license": "MIT",
   "main": "dist/image-clipper.js",
@@ -16,6 +16,7 @@
   "scripts": {
     "start": "webpack --config webpack.config.js",
     "build": "webpack",
+    "watch": "webpack --watch",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject"
   },
