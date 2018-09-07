@@ -1,12 +1,16 @@
 {
   "name": "react-image-clipper",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "img clip",
   "license": "MIT",
   "main": "dist/image-clipper.js",
   "files": [
     "dist"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wuxingjiang007/react-image-clipper.git"
+  },
   "license": "ISC",
   "dependencies": {
     "react": "^16.4.2",
