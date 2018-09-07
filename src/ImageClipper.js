@@ -1,0 +1,537 @@
+import React, {Component} from 'react';
+import styles from './ImageClipper.less';
+
+export default class ImageClipper extends Component {
+  state = {
+    actionType: null,
+    mouseStartX: 0,
+    mouseStartY: 0,
+    initMoveX: 0,
+    initMoveY: 0,
+    moveX: 0,
+    moveY: 0,
+    maxX: 0,
+    maxY: 0,
+    initClipWidth: 640,
+    initClipHeight: 360,
+    clipWidth: 640,
+    clipHeight: 360,
+    w_h: 16 / 9,
+    containerWidth: 0,
+    containerHeight: 0,
+    imgWidth: 0,
+    imgHeight: 0,
+    src: this.props.src,
+    zoomX: 1,
+    zoomY: 1,
+    target: null,
+    clipSrc: '',
+    clipData: '',
+  }
+
+  componentWillReceiveProps (prev, nextProps) {
+    if (this.state.src !== nextProps.src) {
+      this.setState({
+        src: this.props.src,
+      })
+    }
+  }
+
+  componentDidMount () {
+    window.addEventListener('resize', this.setClipViewBoxImg);
+    window.addEventListener('mousemove',this.move.onMouseMove);
+    window.addEventListener('mouseup',   this.move.onMouseUp);
+  }
+
+  componentWillUnmount () {
+    this.removeEvent()
+  }
+
+  setClipViewBoxImg  = (loader) => {
+    const {imgContainer, clipBox, clipperContainer} = this;
+    let {target, clipWidth, clipHeight, zoomX, zoomY, moveX, moveY} = this.state;
+
+    // 加载的图片
+    if (!target) {
+      target = loader.target ||loader.path[0];
+      this.setState({
+        target,
+      });
+    }
+
+    // 图片本身宽高
+    const naturalWidth = target.naturalWidth;
+    const naturalHeight = target.naturalHeight;
+    const imgNaturlWH = naturalWidth / naturalHeight;
+
+    let {width} = imgContainer.getBoundingClientRect();
+    let {height} = clipperContainer.getBoundingClientRect();
+    let imgWidth = width;
+    let imgHeight = width / imgNaturlWH;
+
+    if(height < imgHeight) { // 图片不在放大
+      imgHeight = height,
+      imgWidth = imgHeight * imgNaturlWH;
+      // 保持图片居中
+      imgContainer.style.maxWidth = imgWidth + 'px';
+    }
+
+    clipBox.style.marginLeft = imgContainer.offsetLeft + 'px';
+    clipBox.style.marginTop = imgContainer.offsetTop + 'px';
+
+    const _zoomX = naturalWidth / imgWidth;
+    const _zoomY = naturalHeight / imgHeight;
+
+    this.setState({
+      containerWidth: width,
+      containerHeight: height,
+      zoomX: _zoomX,
+      zoomY: _zoomY,
+      clipWidth: clipWidth * zoomX / _zoomX,
+      clipHeight: clipHeight * zoomY / _zoomY,
+      moveX:moveX * zoomX / _zoomX,
+      moveY:moveY * zoomY / _zoomY,
+      imgWidth,
+      imgHeight,
+    }, () => {
+      this.getClipData();
+    });
+  }
+
+  setClipRect = ({
+      clipWidth = this.state.clipWidth,
+      clipHeight = this.state.clipHeight,
+      moveX = this.state.moveX,
+      moveY = this.state.moveY,
+      mouseStartX = this.state.mouseStartX,
+      mouseStartY = this.state.mouseStartY,
+    }) =>{
+    const {imgWidth, imgHeight} = this.state;
+    const maxX = imgWidth - clipWidth;
+    const maxY = imgHeight - clipHeight;
+
+    if(moveY < 0) {
+      moveY = 0;
+    }
+    if(moveX < 0) {
+      moveX = 0;
+    }
+    if(moveY > maxY) {
+      moveY = maxY;
+    }
+    if(moveX > maxX) {
+      moveX = maxX;
+    }
+    if(clipWidth > imgWidth || clipHeight >imgHeight) {
+      return;
+    }
+
+    this.setState({
+      clipWidth: Math.abs(clipWidth),
+      clipHeight: Math.abs(clipHeight),
+      moveX,
+      moveY,
+      mouseStartX,
+      mouseStartY,
+    }, () => {
+      this.getClipData();
+    });
+  }
+
+  computerCoordinate = ({clientY, clientX, mouseStartX, mouseStartY}) => {
+    const {moveY, moveX, actionType} = this.state;
+    let y;
+    let x;
+    switch (actionType) {
+      case 'ACTION_ALl':
+        // 移动激活
+        y = clientY - mouseStartY + moveY;
+        x = clientX - mouseStartX + moveX;
+        break;
+      default:
+        y = clientY - mouseStartY;
+        x = clientX - mouseStartX;
+        break;
+
+    }
+    return {
+      x,
+      y,
+    };
+
+  }
+
+  move = {
+    onMouseDown : (e, actionType) => {
+      // 允许移动
+      const {clientX, clientY} = e;
+      this.setState({
+        actionType: actionType,
+        mouseStartX: clientX,
+        mouseStartY: clientY,
+      });
+    },
+    onMouseMove : (e) => {
+      const {actionType, mouseStartX, mouseStartY, clipWidth,clipHeight, moveY, moveX, w_h} = this.state;
+      const {clientX, clientY} = e;
+      const coordinate = this.computerCoordinate({clientX, clientY, mouseStartX, mouseStartY});
+      const x = coordinate.x;
+      const y = coordinate.y;
+      let width, height, _y, _x;
+      _y = x * 1 / w_h;
+      _x = y * w_h;
+
+      switch (actionType) {
+        case 'ACTION_ALl': // 移动
+          this.setClipRect({
+            mouseStartX: clientX,
+            mouseStartY: clientY,
+            moveY: y,
+            moveX: x,
+          });
+          break;
+        case 'ACTION_EAST': // 左边
+          width = clipWidth + x;
+          height = width * 1 / w_h;
+          this.setClipRect({
+            mouseStartX: clientX,
+            mouseStartY: clientY,
+            moveY: moveY - _y / 2,
+            clipWidth: width,
+            clipHeight: height,
+          });
+          break;
+        case 'ACTION_WEST': // 右边
+          width = clipWidth - x;
+          height = width * 1 / w_h;
+
+          this.setClipRect({
+            mouseStartX: clientX,
+            mouseStartY: clientY,
+            moveY: moveY + _y / 2,
+            moveX: moveX + x,
+            clipWidth: width,
+            clipHeight: height,
+          });
+          break;
+        case 'ACTION_SOUTH': // 下边
+            height = clipHeight + y;
+            width = height * w_h;
+            this.setClipRect({
+              mouseStartX: clientX,
+              mouseStartY: clientY,
+              moveX: moveX - _x / 2,
+              clipWidth: width,
+              clipHeight: height,
+            });
+          break;
+        case 'ACTION_NORTH': // 上
+          height = clipHeight - y;
+          width = height * w_h;
+          this.setClipRect({
+            mouseStartX: clientX,
+            mouseStartY: clientY,
+            moveX: moveX + _x / 2,
+            moveY: moveY + y,
+            clipWidth: width,
+            clipHeight: height,
+          });
+          break;
+        case 'ACTION_NORTH_EAST': // 左上
+          if(Math.abs(x) > Math.abs(y)) {
+            width = clipWidth + x;
+            height = width * 1 / w_h;
+            this.setClipRect({
+              mouseStartX: clientX,
+              mouseStartY: clientY,
+              moveY: moveY - x / 2,
+              clipWidth: width,
+              clipHeight: height,
+            });
+          } else {
+            height = clipHeight - y;
+            width = height * w_h;
+            this.setClipRect({
+              mouseStartX: clientX,
+              mouseStartY: clientY,
+              moveY: moveY + y,
+              clipWidth: width,
+              clipHeight: height,
+            });
+          }
+
+          break;
+        case 'ACTION_NORTH_WEST': // 右上
+          if(Math.abs(x) > Math.abs(y)) {
+            width = clipWidth - x;
+            height = width * 1 / w_h;
+            this.setClipRect({
+              mouseStartX: clientX,
+              mouseStartY: clientY,
+              moveY: moveY + _y,
+              moveX: moveX + x,
+              clipWidth: width,
+              clipHeight: height,
+            });
+          } else {
+            height = clipHeight - y;
+            width = height * w_h;
+            this.setClipRect({
+              mouseStartX: clientX,
+              mouseStartY: clientY,
+              moveY: moveY + y,
+              moveX: moveX + _x,
+              clipWidth: width,
+              clipHeight: height,
+            });
+          }
+          break;
+        case 'ACTION_SOUTH_WEST': // 左下
+          if(Math.abs(x) > Math.abs(y)) {
+            width = clipWidth - x;
+            height = width * 1 / w_h;
+            this.setClipRect({
+              mouseStartX: clientX,
+              mouseStartY: clientY,
+              moveX: moveX + x,
+              clipWidth: width,
+              clipHeight: height,
+            });
+          } else {
+            height = clipHeight + y;
+            width = height * w_h;
+            this.setClipRect({
+              mouseStartX: clientX,
+              mouseStartY: clientY,
+              moveX: moveX - _x,
+              clipWidth: width,
+              clipHeight: height,
+            });
+          }
+          break;
+        case 'ACTION_SOUTH_EAST':  // 右下
+          if(Math.abs(x) > Math.abs(y)) {
+            width = clipWidth + x;
+            height = width * 1 / w_h;
+            this.setClipRect({
+              mouseStartX: clientX,
+              mouseStartY: clientY,
+              clipWidth: width,
+              clipHeight: height,
+            });
+          } else {
+            height = clipHeight + y;
+            width = height * w_h;
+            this.setClipRect({
+              mouseStartX: clientX,
+              mouseStartY: clientY,
+              clipWidth: width,
+              clipHeight: height,
+            });
+          }
+          break;
+        default:
+          break;
+      }
+
+
+    },
+    onMouseUp : () => {
+      // 关闭移动
+      this.setState({actionType: null});
+    },
+  }
+
+  getClipData = () => {
+    const {src, moveX, moveY, clipWidth, clipHeight, zoomX, zoomY} = this.state;
+    const x = parseInt(moveX * zoomX, 10);
+    const y = parseInt(moveY * zoomY, 10);
+    const width = parseInt(clipWidth * zoomX, 10);
+    const height = parseInt(clipHeight * zoomY,10);
+    this.setState({
+      clipSrc: `${src}?x-oss-process=image/crop,x_${x},y_${y},w_${width},h_${height}`,
+      clipData: {
+        x,
+        y,
+        width,
+        height,
+      },
+    });
+
+  }
+
+  onReset = () => {
+    const {initMoveX, initMoveY, initClipWidth, initClipHeight} = this.state;
+    this.setClipRect({
+      moveX: initMoveX,
+      moveY: initMoveY,
+      clipWidth: initClipWidth,
+      clipHeight: initClipHeight,
+    });
+  }
+
+  removeEvent = () => {
+    window.removeEventListener('resize', this.setClipViewBoxImg);
+    window.removeEventListener('mousemove',this.move.onMouseMove);
+    window.removeEventListener('mouseup',   this.move.onMouseUp);
+  }
+
+  onClose = () => {
+    this.removeEvent();
+    this.props.onCancel();
+  }
+
+  onOk = () => {
+    this.removeEvent();
+    const {clipSrc, clipData} = this.state;
+    this.props.onOk({clipData, clipSrc});
+  }
+
+  render () {
+    const {moveX, moveY, clipWidth, clipHeight, src, imgWidth, imgHeight} = this.state;
+    const {visible} = this.props;
+
+    if(!visible) {
+      return null;
+    }
+    return (
+      <div
+        ref={(node) => this.clipperContainer = node}
+        className={styles.ImageClipperContainer}>
+        <div ref={(node) => this.imgContainer = node}  className={styles.imgContainer}>
+          <img onLoad={(loader) => {
+              this.setClipViewBoxImg(loader);
+            }}
+            style={{
+              width: imgWidth + 'px',
+              height: imgHeight + 'px',
+            }}
+            alt="clippic" src={src}/>
+        </div>
+        <div className={styles.mark}></div>
+        <div className ={styles.clipBoxContainer}>
+          <div
+            ref={(node) => this.clipBox = node}
+            style={{
+              transform: `translate(${moveX}px, ${moveY}px)`,
+              width: `${clipWidth}px`,
+              height: `${clipHeight}px`,
+            }}
+            className={styles.clipBox}>
+            <div   className={styles.clipViewBox}>
+              <img
+                style={{
+                  transform: `translate(${ - moveX}px, ${ - moveY}px)`,
+                  width: imgWidth + 'px',
+                  height: imgHeight + 'px',
+                }}
+                alt="clippic" src={src}/>
+            </div>
+            <div className={styles.clipDashedH}></div>
+            <div className={styles.clipDashedV}></div>
+            <div
+              onMouseDown={(e) => {
+                e.persist();
+                this.move.onMouseDown(e, 'ACTION_ALl');
+              }}
+              className={styles.clipMove}></div>
+            <div
+              onMouseDown={(e) => {
+                e.persist();
+                this.move.onMouseDown(e, 'ACTION_EAST');
+              }}
+              className={styles.clipLineE}></div>
+            <div
+              onMouseDown={(e) => {
+                e.persist();
+                this.move.onMouseDown(e, 'ACTION_NORTH');
+              }}
+              className={styles.clipLineN}></div>
+            <div
+              onMouseDown={(e) => {
+                e.persist();
+                this.move.onMouseDown(e, 'ACTION_WEST');
+              }}
+              className={styles.clipLineW}></div>
+            <div
+              onMouseDown={(e) => {
+                e.persist();
+                this.move.onMouseDown(e, 'ACTION_SOUTH');
+              }}
+              className={styles.clipLineS}></div>
+            <div
+              onMouseDown={(e) => {
+                e.persist();
+                this.move.onMouseDown(e, 'ACTION_EAST');
+              }}
+              className={styles.clipPointE}></div>
+            <div
+              onMouseDown={(e) => {
+                e.persist();
+                this.move.onMouseDown(e, 'ACTION_NORTH');
+              }}
+              className={styles.clipPointN}></div>
+            <div
+              onMouseDown={(e) => {
+                e.persist();
+                this.move.onMouseDown(e, 'ACTION_WEST');
+              }}
+            className={styles.clipPointW}></div>
+            <div
+              onMouseDown={(e) => {
+                e.persist();
+                this.move.onMouseDown(e, 'ACTION_SOUTH');
+              }}
+              className={styles.clipPointS}></div>
+            <div
+              onMouseDown={(e) => {
+                e.persist();
+                this.move.onMouseDown(e, 'ACTION_NORTH_EAST');
+              }}
+              className={styles.clipPointNE}></div>
+            <div
+              onMouseDown={(e) => {
+                e.persist();
+                this.move.onMouseDown(e, 'ACTION_NORTH_WEST');
+              }}
+              className={styles.clipPointNW}></div>
+            <div
+              onMouseDown={(e) => {
+                e.persist();
+                this.move.onMouseDown(e, 'ACTION_SOUTH_WEST');
+              }}
+              className={styles.clipPointSW}></div>
+            <div
+              onMouseDown={(e) => {
+                e.persist();
+                this.move.onMouseDown(e, 'ACTION_SOUTH_EAST');
+              }}
+              className={styles.clipPointSE}></div>
+            </div>
+        </div>
+        <div onClick={this.onClose} className={styles.closeBtn}></div>
+        <div className={styles.btnGroup}>
+          <div onClick={this.onReset} className={styles.clipBtn}>
+            重置
+          </div>
+          <div onClick={this.onOk} className={styles.clipBtn}>
+            确认
+          </div>
+        </div>
+      </div>
+    );
+  }
+};
+
+ImageClipper.defaultProps = {
+  src: 'http://zyp-farm-2.oss-ap-southeast-1.aliyuncs.com/data/farm/head/1533032455399.jpg',
+  visible: true,
+  onCancel: () => {
+    console.log('onCancel');
+  },
+  onOk: () => {
+    console.log('onOk');
+  },
+};
+
+console.log(ImageClipper);
