@@ -14,6 +14,7 @@
     "eject": "react-scripts eject"
   },
   "devDependencies": {
+    "react-image-clipper": "^0.3.4",
     "react-tiny-autosuggest": "^1.0.1"
   }
 }

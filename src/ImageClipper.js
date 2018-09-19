@@ -20,12 +20,14 @@ export default class ImageClipper extends Component {
     initClipHeight: this.props.initClipHeight,
     clipWidth: this.props.initClipWidth,
     clipHeight: this.props.initClipHeight,
-    w_h: this.props.initClipWidth / this.props.initClipHeight,
+    w_h: this.props.w_h || this.props.initClipWidth / this.props.initClipHeight,
     containerWidth: 0,
     containerHeight: 0,
     imgWidth: 0,
     imgHeight: 0,
     src: this.props.src,
+    initZoomX: 1,
+    initZoomY:1,
     zoomX: 1,
     zoomY: 1,
     target: null,
@@ -54,6 +56,7 @@ export default class ImageClipper extends Component {
     img.onload=(loader) => {
       // 加载的图片
       const target = loader.target ||loader.path[0];
+      // console.log(target)
       this.setState({
         target,
       }, () => {
@@ -69,12 +72,16 @@ export default class ImageClipper extends Component {
   componentWillUnmount () {
     this.removeEvent()
   }
-
+  // 重置裁剪位置
+  onReset = () => {
+    this.setClipViewBoxImg()
+  }
+  // 设置裁剪框配置
   setClipViewBoxImg  = () => {
     const {imgContainer, clipBox, clipperContainer} = this;
-    let {target, clipWidth, clipHeight, zoomX, zoomY, moveX, moveY} = this.state;
-    console.log('xxxx' + clipBox)
-    console.log(this)
+    let {target, clipWidth, clipHeight, zoomX, zoomY, moveX, moveY, w_h, initClipWidth, initClipHeight, initZoomX, initZoomY} = this.state;
+    // console.log('xxxx' + clipBox)
+    // console.log(clipWidth, clipHeight, zoomX, zoomY, moveX, moveY, w_h, initClipWidth, initClipHeight)
     // 图片本身宽高
     const naturalWidth = target.naturalWidth;
     const naturalHeight = target.naturalHeight;
@@ -92,23 +99,40 @@ export default class ImageClipper extends Component {
       imgContainer.style.maxWidth = imgWidth + 'px';
     }
 
+    if(initClipWidth === 'auto' && initClipHeight === 'auto') {
+      if(imgNaturlWH < w_h) {
+        clipWidth = naturalWidth * 2 / 3;
+        clipHeight = clipWidth / w_h;
+      } else {
+        clipHeight = naturalHeight * 2 / 3;
+        clipWidth = clipHeight * w_h;
+      }
+    } else {
+      w_h = initClipWidth / initClipHeight;
+    }
+    // console.log(clipWidth, clipHeight)
+
+    moveX = (naturalWidth - clipWidth) / 2;
+    moveY = (naturalHeight - clipHeight) / 2;
+
     clipBox.style.marginLeft = imgContainer.offsetLeft + 'px';
     clipBox.style.marginTop = imgContainer.offsetTop + 'px';
 
-    const _zoomX = naturalWidth / imgWidth;
-    const _zoomY = naturalHeight / imgHeight;
+    zoomX = naturalWidth / imgWidth;
+    zoomY = naturalHeight / imgHeight;
 
     this.setState({
       containerWidth: width,
       containerHeight: height,
-      zoomX: _zoomX,
-      zoomY: _zoomY,
-      clipWidth: clipWidth * zoomX / _zoomX,
-      clipHeight: clipHeight * zoomY / _zoomY,
-      moveX:moveX * zoomX / _zoomX,
-      moveY:moveY * zoomY / _zoomY,
+      zoomX: zoomX,
+      zoomY: zoomY,
+      clipWidth: clipWidth * initZoomX / zoomX,
+      clipHeight: clipHeight * initZoomY / zoomY,
+      moveX:moveX * initZoomX / zoomX,
+      moveY:moveY * initZoomY / zoomY,
       imgWidth,
       imgHeight,
+      w_h: w_h,
     }, () => {
       this.getClipData();
     });
@@ -154,6 +178,7 @@ export default class ImageClipper extends Component {
     });
   }
 
+  // 计算坐标系
   computerCoordinate = ({clientY, clientX, mouseStartX, mouseStartY}) => {
     const {moveY, moveX, actionType} = this.state;
     let y;
@@ -177,6 +202,7 @@ export default class ImageClipper extends Component {
 
   }
 
+  // 操作移动事件
   move = {
     onMouseDown : (e, actionType) => {
       // 允许移动
@@ -358,6 +384,7 @@ export default class ImageClipper extends Component {
     },
   }
 
+  // 获取裁剪数据
   getClipData = () => {
     const {src, moveX, moveY, clipWidth, clipHeight, zoomX, zoomY} = this.state;
     const x = parseInt(moveX * zoomX, 10);
@@ -376,41 +403,29 @@ export default class ImageClipper extends Component {
 
   }
 
-  onReset = () => {
-    const {initMoveX, initMoveY, initClipWidth, initClipHeight} = this.state;
-    this.setClipRect({
-      moveX: initMoveX,
-      moveY: initMoveY,
-      clipWidth: initClipWidth,
-      clipHeight: initClipHeight,
-    });
-  }
-
+  // 移除时间
   removeEvent = () => {
     window.removeEventListener('resize', this.setClipViewBoxImg);
     window.removeEventListener('mousemove',this.move.onMouseMove);
     window.removeEventListener('mouseup',   this.move.onMouseUp);
   }
 
+  // 关闭
   onClose = () => {
     this.removeEvent();
     this.props.onCancel();
   }
 
+  // 确认
   onOk = () => {
     this.removeEvent();
-    const {clipSrc, clipData} = this.state;
-    this.props.onOk({clipData, clipSrc});
+    const {clipSrc, clipData, src} = this.state;
+    this.props.onOk({clipData, clipSrc, src});
   }
 
   render () {
     const {moveX, moveY, clipWidth, clipHeight, src, imgWidth, imgHeight, target} = this.state;
 
-    // console.log(target)
-
-    // if(!target) {
-    //   return <LoadIcon/>
-    // }
     return (
       <div
         ref={(node) => this.clipperContainer = node}
@@ -547,8 +562,9 @@ export default class ImageClipper extends Component {
 
 ImageClipper.defaultProps = {
   src: 'http://zyp-farm-2.oss-ap-southeast-1.aliyuncs.com/data/farm/head/1533032455399.jpg',
-  initClipWidth: 640,
-  initClipHeight: 360,
+  initClipWidth: 'auto',
+  initClipHeight: 'auto',
+  w_h: 16/9,
   onCancel: () => {
     console.log('onCancel');
   },
@@ -562,9 +578,17 @@ ImageClipper.defaultProps = {
 
 ImageClipper.propTypes = {
   src: PropTypes.string.isRequired,
-  initClipWidth: PropTypes.number,
-  initClipHeight: PropTypes.number,
+  initClipWidth:  PropTypes.oneOfType([
+    PropTypes.number,
+    PropTypes.oneOf(['auto'])
+  ]),
+  initClipHeight: PropTypes.oneOfType([
+    PropTypes.number,
+    PropTypes.oneOf(['auto'])
+  ]),
+  w_h:PropTypes.number,
   onCancel: PropTypes.func.isRequired,
   onOk: PropTypes.func.isRequired,
   onError: PropTypes.func,
+
 }

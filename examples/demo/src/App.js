@@ -15,7 +15,7 @@ class App extends Component {
 
     const imgProps = {
       visible: this.state.visible,
-      src: 'https://zyp-farm-2.oss-ap-southeast-1.aliyuncs.com/data/user/head/1536290604812.jpg',
+      src: 'https://zyp-farm-2.oss-ap-southeast-1.aliyuncs.com/data/gather/farm/image/temp/1537152287409.jpg',
       onOk: (value) => {
         console.log(value)
         this.setState({
@@ -30,7 +30,7 @@ class App extends Component {
       },
       onError: () => {
         alert('tu')
-      }
+      },
     }
 
     return (
