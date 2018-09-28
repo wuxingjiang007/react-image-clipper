@@ -36,10 +36,13 @@ export default class ImageClipper extends Component {
   }
 
   // componentWillReceiveProps (nextProps) {
-  //   if (this.props.src !== nextProps.src) {
+  //   if (this.state.src !== nextProps.src) {
   //     this.setState({
   //       src: this.props.src,
+  //     }, () => {
+  //       this.setClipViewBoxImg()
   //     })
+  //
   //   }
   // }
 

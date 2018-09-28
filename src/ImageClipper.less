@@ -239,6 +239,11 @@
     right: 3.3333333333333335vw;
     z-index: 20;
     cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    transform: rotate(45deg);
   }
 
   .closeBtn::after {
@@ -247,7 +252,7 @@
     height: 2px;
     border-radius: 1px;
     background: #fff;
-    transform: translate(0.6vw,1vw) rotate(-45deg);
+    transform: translateY(-1px);
     width: 50%;
   }
 
@@ -257,7 +262,7 @@
     height: 2px;
     border-radius: 1px;
     background: #fff;
-    transform: translate(0.6vw,1.15vw) rotate(45deg);
+    transform: translateY(1px) rotate(90deg);
     width: 50%;
   }
 
