@@ -50,7 +50,6 @@ export default class ImageClipper extends Component {
     window.addEventListener('resize', this.setClipViewBoxImg);
     window.addEventListener('mousemove',this.move.onMouseMove);
     window.addEventListener('mouseup',   this.move.onMouseUp);
-
     // 加载图片
     const img = new Image()
 
@@ -567,6 +566,7 @@ ImageClipper.defaultProps = {
   src: 'http://zyp-farm-2.oss-ap-southeast-1.aliyuncs.com/data/farm/head/1533032455399.jpg',
   initClipWidth: 'auto',
   initClipHeight: 'auto',
+  auto_orient: 1,
   w_h: 16/9,
   onCancel: () => {
     console.log('onCancel');
@@ -581,7 +581,7 @@ ImageClipper.defaultProps = {
 
 ImageClipper.propTypes = {
   src: PropTypes.string.isRequired,
-  auto_orient:1,
+  auto_orient: PropTypes.number,
   initClipWidth:  PropTypes.oneOfType([
     PropTypes.number,
     PropTypes.oneOf(['auto'])
