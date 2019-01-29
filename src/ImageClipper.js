@@ -25,7 +25,7 @@ export default class ImageClipper extends Component {
     containerHeight: 0,
     imgWidth: 0,
     imgHeight: 0,
-    src: this.props.src,
+    src: `${this.props.src}?x-oss-process=image/auto-orient,${this.props.auto_orient}`,
     initZoomX: 1,
     initZoomY:1,
     zoomX: 1,
@@ -395,7 +395,7 @@ export default class ImageClipper extends Component {
     const width = parseInt(clipWidth * zoomX, 10);
     const height = parseInt(clipHeight * zoomY,10);
     this.setState({
-      clipSrc: `${src}?x-oss-process=image/crop,x_${x},y_${y},w_${width},h_${height}`,
+      clipSrc: `${src}/crop,x_${x},y_${y},w_${width},h_${height}`,
       clipData: {
         x,
         y,
@@ -581,6 +581,7 @@ ImageClipper.defaultProps = {
 
 ImageClipper.propTypes = {
   src: PropTypes.string.isRequired,
+  auto_orient:1,
   initClipWidth:  PropTypes.oneOfType([
     PropTypes.number,
     PropTypes.oneOf(['auto'])
