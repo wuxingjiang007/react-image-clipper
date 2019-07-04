@@ -1,27 +1,22 @@
 .ImageClipperContainer {
-  width: 100vw;
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 99999999;
-  background: #000;
-  min-height: 100vh;
   background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQAQMAAAAlPW0iAAAAA3NCSVQICAjb4U/gAAAABlBMVEXMzMz////TjRV2AAAACXBIWXMAAArrAAAK6wGCiw1aAAAAHHRFWHRTb2Z0d2FyZQBBZG9iZSBGaXJld29ya3MgQ1M26LyyjAAAABFJREFUCJlj+M/AgBVhF/0PAH6/D/HkDxOGAAAAAElFTkSuQmCC");
-
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 60vw;
+  height: calc((60vw + 10vw) * 9/16);
   .absolute {
     position: absolute;
     top: 0;
     left: 0;
   }
-
+  .clipperBox {
+    position: relative;
+  }
   .imgContainer {
-    width: 80%;
     position: absolute;
     top: 0;
     left: 0;
-    right: 0;
-    margin: auto;
-
     :global {
       img {
         user-select: none;
@@ -296,4 +291,13 @@
       border: 1px solid #009E00;
     }
   }
+}
+
+.defaultclipperContainer {
+  width: 100vw;
+  height: 100vh;
+  position: fixed;
+  z-index: 99999;
+  top: 0;
+  left: 0;
 }
